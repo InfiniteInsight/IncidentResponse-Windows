@@ -6,7 +6,9 @@ $domain = $env:USERDOMAIN  #obtaining netbios name
 $fqdn = $env:USERDNSDOMAIN #fully qualified domain name
 $GLOBAL:path = "c:\users\public"
 $GLOBAL:dataPath = "$path\$machineBeingInvestigated-$fqdn"
+
 $GLOBAL:incidentName = "TestIncident" ##TO DO: Get user input for the incident name
+
 #new-item -Name $dataPath -Path "\\Path\to\Logging\Location" -ItemType directory
 new-item -Name "$machineBeingInvestigated-$fqdn" -Path "$path" -ItemType directory
 Start-Transcript -Path "$dataPath\PowerShellTranscript.txt" -append
@@ -23,7 +25,7 @@ Start-Transcript -Path "$dataPath\PowerShellTranscript.txt" -append
 #.EXAMPLE
 # get-aduser -filter * | make-log
 ## currently when you do this with a command that returns multiple objects it will log each object separately.
-function make-log(){ 
+function make-log(){  ## Possibly change to add-log ?
 
     [CmdletBinding()]
     param(
@@ -33,6 +35,7 @@ function make-log(){
     
     
     begin{
+    Write-Host "Begin block"
     $executedCommand = $MyInvocation.line
     #Write-Host "Datapath is $dataPath"
     #Write-Host "entry is $entry"
@@ -49,6 +52,7 @@ $($incidentName) Log entry, date: $datetime $timezone
 }
 
 process{
+    Write-Host "PRocess block"
     $startDate | out-file -append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     "Current Working Directory is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     $currentWorkingDirectory.path | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
@@ -66,7 +70,23 @@ end{
 }
 }
 
-##To do: Capture prefetch files
+
+function get-InitialData(){
+
+    
+
+
+
+}
+
+function get-prefetch(){
+    Write-Host "Taking a copy of the Prefetch folder"
+    "Taking a copy of the Prefetch folder" | make-log
+    Copy-Item -Recurse -Path "C:\Windows\Prefetch" -Destination $dataPath\Prefetch -Force
+
+}
+
+##To do: Capture prefetch file
 ##Capture registry hive
 ##Capture uptime
 ##Capture logged in users
