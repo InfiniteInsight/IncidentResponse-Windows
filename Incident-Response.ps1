@@ -55,16 +55,9 @@ $($incidentName) Log entry, date: $datetime $timezone
     "Executed Command is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     $executedCommand | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     "" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
-    #$entry | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
 }
 
 process{
-    <#$startDate | out-file -append -FilePath "$dataPath/$incidentName-Master-Log.txt"
-    "Current Working Directory is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
-    $currentWorkingDirectory.path | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
-    "" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
-    "Executed Command is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
-    $executedCommand | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"#>
     $entry | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
 }
 end{
