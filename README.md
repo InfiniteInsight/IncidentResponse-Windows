@@ -23,3 +23,18 @@ Simply pipe your command to `make-log`
 `get-aduser -filter * | make-log`
 
 Note: currently when you do this with a command that returns multiple objects it will log each object separately.
+
+## get-autoruns
+
+This function will download the Sysinternals tool Autoruns and launch it when finished.
+
+You can disable the automatic launch of Autoruns when download completes by using the `dontAutoStart` and setting it to `True`
+
+Example:
+`get-autoruns -dontAutoStart True` : This will download autoruns and it will not automatically launch it when the download completes.
+
+`get-autoruns` or `get-autoruns -dontAutoStart False` will both download autoruns and it will be launched when the download completes.
+
+## get-prefetch
+
+This function will copy all of the files in the `C:\Windows\Prefetch` folder to the `$dataPath`, which is `C:\Users\Public\{$FullyQualifiedComputerName}`
