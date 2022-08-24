@@ -35,6 +35,6 @@ Example:
 
 `get-autoruns` or `get-autoruns -dontAutoStart False` will both download autoruns and it will be launched when the download completes.
 
-## get-prefetech
+## get-prefetch
 
 This function will copy all of the files in the `C:\Windows\Prefetch` folder to the `$dataPath`, which is `C:\Users\Public\{$FullyQualifiedComputerName}`
