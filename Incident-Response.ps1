@@ -35,7 +35,6 @@ function make-log(){  ## Possibly change to add-log ?
     
     
     begin{
-    Write-Host "Begin block"
     $executedCommand = $MyInvocation.line
     #Write-Host "Datapath is $dataPath"
     #Write-Host "entry is $entry"
@@ -49,55 +48,121 @@ function make-log(){  ## Possibly change to add-log ?
 $($incidentName) Log entry, date: $datetime $timezone
 
 "@
-}
-
-process{
-    Write-Host "PRocess block"
     $startDate | out-file -append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     "Current Working Directory is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     $currentWorkingDirectory.path | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     "" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     "Executed Command is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     $executedCommand | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    "" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    #$entry | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+}
+
+process{
+    <#$startDate | out-file -append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    "Current Working Directory is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    $currentWorkingDirectory.path | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    "" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    "Executed Command is:" | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
+    $executedCommand | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"#>
     $entry | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
 }
 end{
+
+
     $separator = @"
 ================================================================ {End of entry}
 "@
     $separator | out-file -Append -FilePath "$dataPath/$incidentName-Master-Log.txt"
     Write-Host "Item recorded into $incidentName Master Log." -ForegroundColor Green
+    Return "0"
 }
 }
 
 
 function get-InitialData(){
 
-    
+    #Calculate the uptime of the device
+    $lastBoot = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
+    $currentDate = Get-Date
+    $upTime = $CurrentDate - $lastBoot
+    $upTime | make-log
 
+    #identify logged on users
+    query user | make-log
+    #get list of logged on users including service accounts and system accounts
+    Get-WmiObject Win32_LoggedOnUser | Select Antecedent -Unique | make-log
+
+    #identify all users who have ever logged in
+    get-childitem  -Directory "c:\users" | select name, CreationTime, LastAccessTime | make-log
+
+    #retrieve hosts file contents
+    get-content "C:\Windows\System32\drivers\etc\hosts" | make-log
+    
+    #capture scheduled tasks
+
+    #capture ARP table
 
 
 }
 
 function get-prefetch(){
+    #This will copy all of the files in the prefetch folder and log them to the incident log
     Write-Host "Taking a copy of the Prefetch folder"
-    "Taking a copy of the Prefetch folder" | make-log
-    Copy-Item -Recurse -Path "C:\Windows\Prefetch" -Destination $dataPath\Prefetch -Force
-
+    Copy-Item -Recurse -Path "C:\Windows\Prefetch" -Destination $dataPath\Prefetch -Force -PassThru | make-log
+    return $null
 }
 
-##To do: Capture prefetch file
+function get-autoruns(){
+    Param(
+    [Parameter(Mandatory=$false,
+    HelpMessage='Specify noStart to $true if you do not want Autoruns to immediately start after download')]
+    [ValidateSet($false, $true)]
+    $dontAutoStart = $false #by default the "Do not automatically start" parameter is set to false, so autoruns will start as soon as it is downloaded.
+)
+    #Download the Sysinternals tool Autoruns to the $dataPath (c:\users\public\...)
+    $autoRunsPath = "$($dataPath)\Autoruns.exe"
+    $URI = "https://live.sysinternals.com/autoruns.exe"
+
+    try{
+        if($PSVersionTable.PSVersion.Major -ge "5"){
+            Invoke-WebRequest -Uri $URI -OutFile $autoRunsPath 
+        }
+        else{ 
+            (New-Object System.Net.WebClient).DownloadFile($URI,$autoRunsPath)
+        }
+    }
+    catch {
+        $Error[0].Exception.GetType()
+        write-host " "
+        $_
+        Write-Host " "
+        Write-Host " "
+        Write-Warning -Message "There seems to be connectivity issues of some kind."
+        Test-Connection -IPv4 -Count 2 -Ping 8.8.8.8
+    }
+    
+    if($dontAutoStart -eq $false){
+        if(Test-Path $autoRunsPath){
+            #Start autoruns if the downloads were successful
+            Start-Process -FilePath $autoRunsPath
+        }
+    }
+    return $null
+}
+
+##To do: 
 ##Capture registry hive
-##Capture uptime
-##Capture logged in users
-##Capture users who have ever logged in
-##Capture update status
-##Capture hosts file
+##Capture windows update status
 ##Capture netstat connections
 ##Capture ARP table
 ##Capture ip routes
 ##Capture mapped drives
 ##Get user input for the incident name
 ##Capture scheduled tasks
-##Download and run anyrun
-
+##Download and run autoruns -done✅
+##Capture prefetch files -done✅
+##Capture uptime -done✅
+##Capture logged in users -done✅
+##Capture users who have ever logged in -done✅
+##Capture hosts file - done✅
