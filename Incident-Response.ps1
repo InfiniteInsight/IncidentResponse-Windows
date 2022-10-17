@@ -25,6 +25,9 @@ Start-Transcript -Path "$dataPath\PowerShellTranscript.txt" -append
 #.EXAMPLE
 # get-aduser -filter * | make-log
 ## currently when you do this with a command that returns multiple objects it will log each object separately.
+
+
+
 function make-log(){  ## Possibly change to add-log ?
 
     [CmdletBinding()]
@@ -72,33 +75,6 @@ end{
 }
 }
 
-
-function get-InitialData(){
-
-    #Calculate the uptime of the device
-    $lastBoot = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
-    $currentDate = Get-Date
-    $upTime = $CurrentDate - $lastBoot
-    $upTime | make-log
-
-    #identify logged on users
-    query user | make-log
-    #get list of logged on users including service accounts and system accounts
-    Get-WmiObject Win32_LoggedOnUser | Select Antecedent -Unique | make-log
-
-    #identify all users who have ever logged in
-    get-childitem  -Directory "c:\users" | select name, CreationTime, LastAccessTime | make-log
-
-    #retrieve hosts file contents
-    get-content "C:\Windows\System32\drivers\etc\hosts" | make-log
-    
-    #capture scheduled tasks
-
-    #capture ARP table
-
-
-}
-
 function get-prefetch(){
     #This will copy all of the files in the prefetch folder and log them to the incident log
     Write-Host "Taking a copy of the Prefetch folder"
@@ -144,18 +120,141 @@ function get-autoruns(){
     return $null
 }
 
+function get-loggedOnUsers(){
+
+    $loggedOnUsers = (Get-WMIObject -ClassName Win32_ComputerSystem).Username
+    #alternatively use 'query user'
+    Return $loggedOnUsers
+
+}
+
+function get-computerUptime{
+    $lastBootTime = (Get-WmiObject -ClassName Win32_OperatingSystem).LastBootUpTime
+    $currentDate = Get-Date
+    $upTime = $currentDate - $lastBootTime
+    Return $upTime
+
+}
+
+
+function get-InitialData(){
+
+    $powershellVersion = $PSVersionTable.PSVersion
+
+    if($powershellVersion.major -lt 5){
+        #If the version of powershell present is older than PowerShell 5
+
+        #Get a list of local accounts
+        $localUsers = Get-WmiObject -Class Win32_UserAccount -Filter "LocalAccount=True"
+        $localUsers | make-log
+        #Get a list of local Administrators
+        $localAdminsGroup = Get-WmiObject -Class Win32_Group -filter "Name='Administrators'"
+        $localAdmins = $localAdminsGroup.GetRelated("Win32_UserAccount")
+        $localAdmins | make-log
+        
+        #Get a list of SMB Shares
+        $networkShares = Get-WMIObject -Query "SELECT * FROM Win32_Share" | Format-Table
+        $networkShares | make-log
+    
+        #get a list of scheduled tasks
+        $scheduledTasks = & schtasks /query /fo LIST /v 
+        $scheduledTasks | make-log
+
+    }
+    else{
+        #If the version of PowerShell installed is 5 or higher
+
+        #Get a list of local accounts and local administrators
+        $localUsers = get-localuser | select * 
+        $localUsers | make-log
+        $localAdmins = get-localgroupmember -group "Administrators" | make-log
+        $localAdmins | make-log
+
+        #Get a list of all SMB and NFS file shares
+        $networkShares = Get-SMBShare
+        $networkShares | make-log
+        $nfsShares = Get-FileShare 
+        $nfsShares | make-log
+
+        #get a list ofscheduled tasks on the system
+        $scheduledTasks = get-scheduledtask
+        $scheduledTasks | make-log
+
+        #get run info for scheduled tasks
+        $scheduledTaskInfo = $scheduledTasks | get-scheduledtaskinfo
+        $scheduledTaskInfo | make-log
+
+
+
+    }
+    #Execute regardless of version of PowerShell Present:
+
+    get-loggedOnUsers | make-log
+
+    get-computerUptime | make-log
+
+    #Calculate the uptime of the device, moved to a function above
+    #$lastBoot = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
+    #$currentDate = Get-Date
+    #$upTime = $CurrentDate - $lastBoot
+    #$upTime | make-log
+
+    #identify logged on users, moved to a function above
+    #query user | make-log
+
+    #get list of logged on users including service accounts and system accounts, a little more detailed than the above function. Debating putting this into a function as well.
+    $loggedOnUsersAndSysAccounts = Get-WmiObject Win32_LoggedOnUser | Select Antecedent -Unique
+    $loggedOnUsersAndSysAccounts | make-log
+
+    #identify all users who have ever logged in
+    $usersDirectory = get-childitem  -Directory "c:\users" | select name, CreationTime, LastAccessTime
+    $usersDirectory | make-log
+
+    #retrieve hosts file contents
+    $hostsFile = get-content "C:\Windows\System32\drivers\etc\hosts" 
+    $hostsFile | make-log
+    
+    #get ARP cache, use arp insteae of get-netneighbor
+    $arp = $ arp /a
+    $arp | make-log
+
+    #get processes
+    $processes = & wmic get name,parentprocessid,processid
+    #left off getting process path
+
+}
+
+
+
 ##To do: 
 ##Capture registry hive
 ##Capture windows update status
-##Capture netstat connections
-##Capture ARP table
+##Capture netstat -ano connections
 ##Capture ip routes
 ##Capture mapped drives
 ##Get user input for the incident name
-##Capture scheduled tasks
+##Get processes-in progress
+##Get services
+##Get startup list
+##check for hosted file shares with net view
+##check firewall settings
+##Pull event logs
+##Download and optionally run ProcMon
+##Downalod and optionally run Process Explorer
+##Make running autoruns optional when downloaded
+##Download Memoryze
+##Download Redline
+
+
+##Capture scheduled tasks -done✅
 ##Download and run autoruns -done✅
 ##Capture prefetch files -done✅
 ##Capture uptime -done✅
 ##Capture logged in users -done✅
 ##Capture users who have ever logged in -done✅
 ##Capture hosts file - done✅
+##Capture ARP table - done✅
+
+
+
+
