@@ -244,6 +244,7 @@ function get-InitialData(){
 ##Make running autoruns optional when downloaded
 ##Download Memoryze
 ##Download Redline
+##Write a description for the entire script, not just make-log
 
 
 ##Capture scheduled tasks -done✅
