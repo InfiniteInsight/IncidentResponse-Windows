@@ -245,7 +245,7 @@ function get-InitialData(){
     $localShares | make-log
 
     #export a list of startup items
-    $startup = Get-CimInstance Win32_StartupCommand | Select Name, command, Location, User | Format-List 
+    $startup = Get-WMIObject Win32_StartupCommand | Select Name, command, Location, User | Format-List 
     $startup | make-log
 
     #check firewall status
