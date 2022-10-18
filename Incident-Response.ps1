@@ -218,34 +218,64 @@ function get-InitialData(){
     $arp = $ arp /a
     $arp | make-log
 
-    #get processes
+    #Get IP Routes
+    $routes = & route print
+    $routes | make-log
+
+    #get processes with parents
     $processes = & wmic get name,parentprocessid,processid
-    #left off getting process path
+    $processes | make-log
+
+    #get processes and their path
+    $processes2 = Get-Process
+    foreach($process in $processes2){
+        $ wmic process where "ProcessID=$process" get CommandLine | make-log
+    }
+
+    #output all listening ports
+    $openPorts = & netstat -ano
+    $openPorts | make-log
+
+    #get services
+    $services = get-service
+    $services | make-log
+
+    #find any local shares being hosted on this computer
+    $localShares = & net view \\127.0.0.1
+    $localShares | make-log
+
+    #export a list of startup items
+    $startup = Get-CimInstance Win32_StartupCommand | Select Name, command, Location, User | Format-List 
+    $startup | make-log
+
+    #check firewall status
+    $firewallStatus = & netsh advfirewall show all state
+    $firewallStatus | make-log
+
+    #grab a copy of the registry
+    $hklm = & reg export 'HKLM' $dataPath\$incidentName\HKLM-backup.Reg /y
+    $hkcu = & reg export 'HKCU' $dataPath\$incidentName\HKCU-backup.Reg /y
+    $hkcc = & reg export 'HKCC' $dataPath\$incidentName\HKCC-backup.Reg /y
+    $hkcr = & reg export 'HKCR' $dataPath\$incidentName\HKCR-backup.Reg /y
+    $hku = & reg export 'HKU' $dataPath\$incidentName\HKU-backup.Reg /y
+
+
+    #Get windows security event logs
+    $securityEvents = Get-WinEvent -logname security -list -asstring
+    $securityEvents | out-file $dataPath\$incidentName\Security-Events.log -append    
 
 }
 
 
 
 ##To do: 
-##Capture registry hive
 ##Capture windows update status
-##Capture netstat -ano connections
-##Capture ip routes
-##Capture mapped drives
 ##Get user input for the incident name
-##Get processes-in progress
-##Get services
-##Get startup list
-##check for hosted file shares with net view
-##check firewall settings
-##Pull event logs
 ##Download and optionally run ProcMon
 ##Downalod and optionally run Process Explorer
-##Make running autoruns optional when downloaded
 ##Download Memoryze
 ##Download Redline
 ##Write a description for the entire script, not just make-log
-
 
 ##Capture scheduled tasks -done✅
 ##Download and run autoruns -done✅
@@ -255,7 +285,13 @@ function get-InitialData(){
 ##Capture users who have ever logged in -done✅
 ##Capture hosts file - done✅
 ##Capture ARP table - done✅
-
-
-
-
+##Capture netstat -ano connections - done✅
+##Get processes - done✅
+##Capture ip routes -done✅
+##Get services -done✅
+##Capture mapped drives -done✅
+##check for hosted file shares with net view -done✅
+##Get startup list -done✅
+##check firewall settings -done✅
+##Capture registry hive -done✅
+##Pull event logs -done✅
